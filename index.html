@@ -1,20 +1,19 @@
-import os
-
-def launch_youtube():
-    print("--- JARVIS Mobile Subsystem ---")
-    print("Sending launch protocol to phone...")
-    
-    # Uses the built-in system terminal to trigger your phone's native YouTube app
-    exit_code = os.system(
-        "adb shell am start -n com.google.android.youtube/"
-        "com.google.android.apps.youtube.app.watchwhile.WatchWhileActivity"
-    )
-    
-    if exit_code == 0:
-        print("✅ Success: YouTube launched on your device, Sir.")
-    else:
-        print("❌ Error: Device connection failed.")
-        print("Please check your Wi-Fi pairing or USB cable status.")
-
-if __name__ == "__main__":
-    launch_youtube()
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS Launcher</title>
+    <style>
+        body { background: #0f172a; color: #38bdf8; font-family: sans-serif; text-align: center; padding-top: 100px; }
+        .btn { background: #0284c7; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block; margin-top: 20px; }
+        .btn:hover { background: #0369a1; }
+    </style>
+</head>
+<body>
+    <h1>J.A.R.V.I.S. Mobile Launcher Subsystem</h1>
+    <p>Click the button below to download your script:</p>
+    <!-- Change "your_script_name.py" to match the exact name of your Python file on GitHub -->
+    <a href="your_script_name.py" download class="btn">📥 Download Script</a>
+</body>
+</html>
