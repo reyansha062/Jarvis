@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>JARVIS AI</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <div class="logo">
+        J.A.R.V.I.S.
+        <span>GEMINI AI CORE</span>
+    </div>
+
+    <div class="online">
+        <i></i>
+        ONLINE
+    </div>
+</header>
+
+<main>
+
+<div class="reactor" id="reactor">
+    <div class="ring ring1"></div>
+    <div class="ring ring2"></div>
+
+    <div class="core">
+        J
+    </div>
+</div>
+
+<div class="statusText" id="statusText">
+    READY
+</div>
+
+<h1 id="answer">
+    Good day. I am JARVIS.
+</h1>
+
+<p id="detail">
+    Click ACTIVATE JARVIS and allow microphone access.
+</p>
+
+<button id="activate" class="activate">
+    🎙 ACTIVATE JARVIS
+</button>
+
+<div class="micStatus">
+    <span id="micDot"></span>
+    <b id="micState">MICROPHONE OFF</b>
+</div>
+
+<div class="buttons">
+
+<button id="mic">
+    🎙 START LISTENING
+</button>
+
+<button id="micTest">
+    TEST MICROPHONE
+</button>
+
+<button id="stop">
+    STOP
+</button>
+
+</div>
+
+<section class="chat">
+
+<div class="inputArea">
+
+<input
+id="cmd"
+placeholder="Talk to JARVIS..."
+autocomplete="off">
+
+<button id="send">
+SEND
+</button>
+
+</div>
+
+<div class="examples">
+
+<button data-q="Explain artificial intelligence simply">
+Explain AI
+</button>
+
+<button data-q="Search YouTube for Python tutorials">
+YouTube
+</button>
+
+<button data-q="What is the capital of India?">
+Ask
+</button>
+
+<button data-q="Set a timer for 10 seconds">
+Timer
+</button>
+
+</div>
+
+</section>
+
+<section class="activity">
+
+<div class="activityHeader">
+    ACTIVITY
+    <button id="clear">CLEAR</button>
+</div>
+
+<div id="log"></div>
+
+</section>
+
+</main>
+
+<footer>
+JARVIS • GEMINI POWERED
+</footer>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
