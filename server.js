@@ -1,117 +1,53 @@
-import "dotenv/config";
-import express from "express";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { GoogleGenAI } from "@google/genai";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get("/api/health", (req, res) => {
-  res.json({
-    ok: Boolean(process.env.GEMINI_API_KEY)
-  });
-});
-
-app.post("/api/chat", async (req, res) => {
+// Gemini AI Chat Route
+app.post('/api/chat', async (req, res) => {
   try {
-    const message = String(req.body.message || "").trim();
-
-    if (!message) {
-      return res.status(400).json({
-        error: "No message received."
-      });
+    const { prompt } = req.body;
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ error: "Missing GEMINI_API_KEY in .env file." });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({
-        error: "GEMINI_API_KEY is missing."
-      });
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are JARVIS, an intelligent and witty AI assistant. Keep responses concise, direct, and conversational (under 3 sentences unless asked for more). User: ${prompt}`
+          }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message });
     }
 
-    const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-      contents: message,
-      config: {
-        systemInstruction: `
-You are JARVIS, an intelligent personal AI assistant.
-
-Understand natural human language, follow-up questions,
-misspellings, casual speech and incomplete sentences.
-
-Be helpful, concise and conversational.
-
-If the user wants a web action, return an action.
-Supported actions:
-
-google
-youtube
-maps
-weather
-timer
-
-Otherwise return action as null.
-
-Return JSON only.
-        `,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            reply: {
-              type: "string"
-            },
-            action: {
-              type: "object",
-              nullable: true,
-              properties: {
-                type: {
-                  type: "string"
-                },
-                query: {
-                  type: "string",
-                  nullable: true
-                },
-                seconds: {
-                  type: "number",
-                  nullable: true
-                }
-              },
-              required: ["type"]
-            }
-          },
-          required: ["reply", "action"]
-        }
-      }
-    });
-
-    const result = JSON.parse(response.text);
-
-    res.json(result);
-
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error: "Gemini request failed."
-    });
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I didn't receive a response.";
+    res.json({ reply });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get("*", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "public", "index.html")
-  );
+// Fallback to index.html for any other route
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
