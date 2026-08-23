@@ -499,10 +499,10 @@
       return;
     }
 
-    if (query.includes('what time') || query.trim() === 'time') {
+    if (/\btime\b/.test(query) && !query.includes('weather')) {
       speak(`The time is ${new Date().toLocaleTimeString()}.`); return;
     }
-    if (query.includes('what date') || query.includes("today's date") || query.trim() === 'date') {
+    if (/\bdate\b/.test(query)) {
       speak(`Today's date is ${new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}.`); return;
     }
 
