@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="google-site-verification" content="XTLG9lxikMYpd6OU7Rgeck51SUnNTI2NEt4I1RmgEq8" />
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>J.A.R.V.I.S.</title>
@@ -355,7 +356,7 @@
 
   // ---------- Speech recognition ----------
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const WAKE_WORDS = ["hey jarvis", "ok jarvis", "okay jarvis", "jarvis"]; // longest-first match order
+  const WAKE_WORDS = ["hey jarvis", "ok jarvis", "okay jarvis", "jarvis"];
   let recognizer = null;
   let listening = false;
   let wakeModeEnabled = false;
@@ -384,7 +385,7 @@
     };
 
     recognizer.onerror = (e) => {
-      if (e.error === 'no-speech' || e.error === 'aborted') return; // routine in continuous mode
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
         logLine('sys', 'Microphone permission denied. Click the icon in the address bar and allow microphone access, then try again.');
         wakeModeEnabled = false;
@@ -417,7 +418,7 @@
 
       if (wakeModeEnabled) {
         const matched = WAKE_WORDS.find(w => lower.includes(w));
-        if (!matched) return; // ignore ambient speech that doesn't include the wake word
+        if (!matched) return;
         logLine('you', transcript);
         const idx = lower.indexOf(matched);
         const command = lower.slice(idx + matched.length).trim().replace(/^[, .]+/, '');
@@ -528,7 +529,7 @@
     }
   }
 
-  // ---------- Weather (OpenWeatherMap, key stored locally) ----------
+  // ---------- Weather (OpenWeatherMap) ----------
   async function getWeather(city) {
     if (!city) { speak("Which city's weather would you like?"); return; }
     let key = localStorage.getItem('owm_key');
