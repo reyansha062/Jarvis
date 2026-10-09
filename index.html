@@ -268,13 +268,14 @@
       </div>
     </div>
 
-    <div class="hint">Try: "what time is it" · "wikipedia iron man" · "open github" · "tell me a joke" · "weather in london" · "note that ..." · "status report" — or enable "Hey JARVIS" for hands-free.</div>
+    <div class="hint">Try: "what time is it" · "who was alan turing" · "open github" · "tell me a joke" · "explain quantum physics" · "note that ..." · "status report"</div>
   </div>
 
 <script>
 (() => {
   const ASSISTANT_NAME = "JARVIS";
   const USER_NAME = "sir";
+  const GEMINI_API_KEY = "AQ.Ab8RN6LID0wKjbaN4S-P2tNMZUCER7WHVq7pngToBGfwZt-V2g";
 
   const core = document.getElementById('core');
   const statusLine = document.getElementById('statusLine');
@@ -352,6 +353,40 @@
     };
     synth.cancel();
     synth.speak(utter);
+  }
+
+  // ---------- Google Gemini Brain ----------
+  async function askGemini(promptText) {
+    setState('processing');
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }],
+          systemInstruction: {
+            parts: [{ text: `You are J.A.R.V.I.S., Tony Stark's concise, intelligent, and polite AI assistant. Address the user as 'sir'. Keep answers spoken, brief, punchy, and clear without markdown asterisks or special formatting.` }]
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error?.message || `HTTP error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (reply) {
+        speak(reply.trim());
+      } else {
+        speak("I received an empty response from the network, sir.");
+      }
+    } catch (err) {
+      console.error(err);
+      speak(`I ran into an issue connecting with Google, sir: ${err.message || 'connection failed'}`);
+    }
   }
 
   // ---------- Speech recognition ----------
@@ -467,162 +502,4 @@
       try { recognizer.start(); } catch (e) {}
       logLine('sys', 'Hands-free mode on — say "Hey JARVIS" followed by your command.');
     } else {
-      try { recognizer.stop(); } catch (e) {}
-      micState.textContent = 'MIC: OFF';
-      setState('idle');
-    }
-  });
-
-  // ---------- Text input ----------
-  function submitText() {
-    const val = textInput.value.trim();
-    if (!val) return;
-    logLine('you', val);
-    textInput.value = '';
-    handleCommand(val.toLowerCase());
-  }
-  sendBtn.addEventListener('click', submitText);
-  textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitText(); });
-
-  // ---------- Personality lines ----------
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-  const GREETINGS_BACK = ["Always a pleasure.", "At your service.", "Reading you loud and clear.", "Standing by."];
-  const STATUS_LINES = [
-    "All systems nominal. Running well within parameters.",
-    "Diagnostics clean across the board. Feeling rather sharp today.",
-    "Everything's green. We're in good shape.",
-  ];
-  const ACK = ["On it.", "Consider it done.", "Right away.", "Working on it now."];
-  const JOKES = [
-    "Why did the robot go on a diet? It had too many bytes.",
-    "I would tell you a UDP joke, but you might not get it.",
-    "Why do programmers prefer dark mode? Because light attracts bugs.",
-  ];
-
-  // ---------- Notes (localStorage) ----------
-  function addNote(content) {
-    if (!content) { speak("What would you like me to note down?"); return; }
-    const notes = JSON.parse(localStorage.getItem('jarvis_notes') || '[]');
-    notes.push({ text: content, ts: new Date().toLocaleString() });
-    localStorage.setItem('jarvis_notes', JSON.stringify(notes));
-    speak(pick(ACK) + " Noted.");
-  }
-  function readNotes() {
-    const notes = JSON.parse(localStorage.getItem('jarvis_notes') || '[]');
-    if (!notes.length) { speak("You don't have any notes yet."); return; }
-    speak(`You have ${notes.length} notes. Here are the most recent.`);
-    notes.slice(-5).forEach(n => logLine('jarvis', `[${n.ts}] ${n.text}`));
-  }
-
-  // ---------- Wikipedia ----------
-  async function searchWikipedia(term) {
-    if (!term) { speak("What would you like me to look up?"); return; }
-    speak(`Searching Wikipedia for ${term}...`);
-    try {
-      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`);
-      if (!res.ok) throw new Error('not found');
-      const data = await res.json();
-      speak(data.extract || `I found ${term}, but there's no summary available.`);
-    } catch {
-      speak(`I couldn't find anything on Wikipedia for ${term}.`);
-    }
-  }
-
-  // ---------- Weather (OpenWeatherMap) ----------
-  async function getWeather(city) {
-    if (!city) { speak("Which city's weather would you like?"); return; }
-    let key = localStorage.getItem('owm_key');
-    if (!key) {
-      key = prompt("Enter a free OpenWeatherMap API key to enable weather lookups (stored only in your browser):");
-      if (!key) { speak("No API key provided, so I can't check the weather."); return; }
-      localStorage.setItem('owm_key', key.trim());
-      key = key.trim();
-    }
-    speak(`Checking the weather in ${city}...`);
-    try {
-      const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${key}&units=metric`);
-      const data = await res.json();
-      if (data.cod !== 200) throw new Error('bad response');
-      const temp = Math.round(data.main.temp);
-      const feels = Math.round(data.main.feels_like);
-      const desc = data.weather[0].description;
-      speak(`It's currently ${temp} degrees in ${city}, feels like ${feels}, with ${desc}.`);
-    } catch {
-      speak(`I couldn't get weather data for ${city}. Double-check the city name or your API key.`);
-    }
-  }
-
-  // ---------- Command router ----------
-  const EXIT_WORDS = ["exit", "quit", "shut down", "shutdown", "goodbye", "power down"];
-  const EXIT_LINES = [
-    "Powering down. Call if you need me.",
-    "Going dark. I'll be here when you get back.",
-    "Shutting down now. It's been a pleasure.",
-  ];
-
-  function handleCommand(query) {
-    query = query.toLowerCase().trim();
-    if (!query) return;
-
-    if (EXIT_WORDS.some(w => query.includes(w))) {
-      speak(pick(EXIT_LINES));
-      return;
-    }
-
-    if (/^(hi|hello|hey)\b/.test(query)) { speak(pick(GREETINGS_BACK)); return; }
-    if (query.includes('your name')) { speak("I am JARVIS — Just A Rather Very Intelligent System. At least, that's the idea."); return; }
-    if (query.includes('how are you')) { speak(pick(STATUS_LINES)); return; }
-    if (query.includes('status report') || query.includes('diagnostics')) { speak(pick(STATUS_LINES)); return; }
-    if (query.includes('who made you') || query.includes('who created you') || query.includes('who built you')) {
-      speak("I was built and customized right here, in this codebase. Consider yourself my creator."); return;
-    }
-    if (query.includes('joke')) { speak(pick(JOKES)); return; }
-    if (query.includes('thank')) { speak("Anytime. That's what I'm here for."); return; }
-
-    if (query.includes('wikipedia')) { searchWikipedia(query.replace('wikipedia', '').trim()); return; }
-    if (query.includes('open youtube')) { speak('Opening YouTube.'); window.open('https://youtube.com', '_blank'); return; }
-    if (query.includes('open google')) { speak('Opening Google.'); window.open('https://google.com', '_blank'); return; }
-    if (query.includes('open github')) { speak('Opening GitHub.'); window.open('https://github.com', '_blank'); return; }
-    if (query.startsWith('search for') || query.startsWith('google')) {
-      const term = query.replace('search for', '').replace('google', '').trim();
-      if (!term) { speak('What would you like me to search for?'); return; }
-      speak(`Searching for ${term}.`);
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(term)}`, '_blank');
-      return;
-    }
-
-    if (/\btime\b/.test(query) && !query.includes('weather')) {
-      speak(`The time is ${new Date().toLocaleTimeString()}.`); return;
-    }
-    if (/\bdate\b/.test(query)) {
-      speak(`Today's date is ${new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}.`); return;
-    }
-
-    if (query.startsWith('note') || query.startsWith('remember that')) {
-      const content = query.replace('note that', '').replace('note', '').replace('remember that', '').trim();
-      addNote(content); return;
-    }
-    if (query.includes('read my notes') || query.includes('read notes')) { readNotes(); return; }
-
-    if (query.includes('weather')) {
-      const city = query.replace('weather in', '').replace('weather', '').trim();
-      getWeather(city); return;
-    }
-
-    speak("I don't have a routine for that yet. Add a rule for it in the script and I'll pick it up next time.");
-  }
-
-  // ---------- Boot sequence ----------
-  function greet() {
-    const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-    speak(`${timeGreeting}, ${USER_NAME}. ${ASSISTANT_NAME} online. How can I help?`);
-  }
-
-  logLine('sys', 'Booting interface...');
-  setTimeout(greet, 600);
-})();
-</script>
-</body>
-</html>
+      try { recognizer.stop();
